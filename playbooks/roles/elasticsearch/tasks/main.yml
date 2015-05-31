@@ -33,6 +33,7 @@
   get_url: >
     url={{ elasticsearch_url }}
     dest=/var/tmp/{{ elasticsearch_file }}
+    validate_certs=no
     force=no
   register: elasticsearch_reinstall
 
