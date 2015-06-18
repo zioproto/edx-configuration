@@ -133,7 +133,7 @@
 
 - name: make queues mirrored
   shell: "/usr/sbin/rabbitmqctl set_policy HA '^(?!amq\\.).*' '{\"ha-mode\": \"all\"}'"
-  when: RABBITMQ_CLUSTERED or rabbitmq_clustered_hosts|length > 1
+  when: RABBITMQ_CLUSTERED_HOSTS|length > 1
   tags:
     - ha
     - maintenance
