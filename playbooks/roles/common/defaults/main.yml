@@ -86,12 +86,12 @@ common_debian_pkgs:
   # Not installed by default on vagrant ubuntu
   # boxes
   - curl
+  - python-pip
+  - python-setuptools
+  - python-virtualenv
+  - python-virtualenvwrapper
 
 common_pip_pkgs:
-  - pip==1.5.6
-  - setuptools==3.6
-  - virtualenv==1.11.6
-  - virtualenvwrapper
 
 common_web_user: www-data
 common_web_group: www-data

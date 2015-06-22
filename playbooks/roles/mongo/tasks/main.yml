@@ -15,9 +15,10 @@
   when: mongodb_needs_upgrade.stat.exists and not MONGO_CLUSTERED
   
 - name: install python pymongo for mongo_user ansible module
-  pip: >
-    name=pymongo state=present
-    version={{ pymongo_version }} extra_args="-i {{ COMMON_PYPI_MIRROR_URL }}"
+  apt: >
+    pkg=python-pymongo
+    state=latest
+    force=yes
 
 - name: add the mongodb signing key
   apt_key: >

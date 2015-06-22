@@ -58,11 +58,11 @@ aws_cmd: "/usr/local/bin/aws"
 
 aws_debian_pkgs:
   - python-setuptools
+  - python-boto
+  - python-awscli
+  - python-aws-cfn-bootstrap
 
 aws_pip_pkgs:
-  - https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
-  - awscli==1.4.2
-  - boto==2.32.0
 
 aws_redhat_pkgs: []
 aws_s3cmd_version: s3cmd-1.5.0-beta1
