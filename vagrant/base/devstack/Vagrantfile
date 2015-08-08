@@ -49,6 +49,19 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.ssh.forward_x11 = true
   end
 
+  # 
+  # By default no shared filesystem is configured between the guest and host.
+  # To enable filesystem sharing, which makes editing running code posible,
+  # you will need to enable either NFS of VBOXFS.
+  #
+  # To enable NFS:
+  #
+  # $ export VAGRANT_USE_NFS="true"
+  #
+  # To enable VBOXFS, which is typically less performant:
+  #
+  # $ export VAGRANT_USE_VBOXFS="true"
+  #
   if ENV['VAGRANT_USE_VBOXFS'] == 'true'
     config.vm.synced_folder "#{edx_platform_mount_dir}", "/edx/app/edxapp/edx-platform",
       create: true, owner: "edxapp", group: "www-data"
@@ -63,7 +76,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         config.vm.synced_folder "#{ora_mount_dir}", "/edx/app/ora/ora",
           create: true, owner: "ora", group: "www-data"
     end
-  else
+  end
+
+  if ENV['VAGRANT_USE_NFS'] == 'true'
     config.vm.synced_folder "#{edx_platform_mount_dir}", "/edx/app/edxapp/edx-platform",
       create: true, nfs: true
     config.vm.synced_folder "#{themes_mount_dir}", "/edx/app/edxapp/themes",
@@ -78,7 +93,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           create: true, nfs: true
     end
   end
-
 
   config.vm.provider :virtualbox do |vb|
     vb.customize ["modifyvm", :id, "--memory", MEMORY.to_s]
