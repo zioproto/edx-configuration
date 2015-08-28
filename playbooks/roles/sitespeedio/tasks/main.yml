@@ -39,12 +39,12 @@
 # Temporary workaround to get an unreleased fix for sitespeed.io
 - name: Create a clone of the sitespeed.io repo
   git: >
-    repo=https://github.com/sitespeedio/sitespeed.io.git
+    repo=https://github.com/jzoldak/sitespeed.io.git
     dest=/tmp/sitespeedio
-    version=master
+    version=screenshot-waitscript
     depth=1
 
-- name: Install sitespeed.io from master
+- name: Install sitespeed.io from screenshot-waitscript
   shell: >
     npm install -g
     chdir=/tmp/sitespeedio
