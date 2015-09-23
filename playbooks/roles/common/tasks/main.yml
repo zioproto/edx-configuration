@@ -99,6 +99,12 @@
   when: COMMON_HOSTNAME|length > 0
   register: etc_hostname
 
+- name: Improved screenrc
+  copy: >
+    dest=/etc/screenrc
+    src=etc/screenrc
+    owner=root group=root mode=644
+
 - name: run hostname
   shell: >
     hostname -F /etc/hostname
