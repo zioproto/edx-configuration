@@ -178,4 +178,6 @@ location ~ ^{{ EDXAPP_MEDIA_URL }}/(?P<file>.*) {
   if ($do_redirect = "true") {
     rewrite ^ https://$host$request_uri? permanent;
   }
+
+  include {{ nginx_include_dir }}/lms/*;
 }
