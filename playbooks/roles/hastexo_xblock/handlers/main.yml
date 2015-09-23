@@ -1,0 +1,27 @@
+---
+- name: kill nginx
+  shell: pkill nginx
+
+- name: start nginx
+  service: name=nginx state=started
+
+- name: restart nginx
+  service: name=nginx state=restarted
+
+- name: restart edxapp
+  supervisorctl: >
+    state=restarted
+    supervisorctl_path={{ supervisor_ctl }}
+    config={{ supervisor_cfg }}
+    name="edxapp:{{ item }}"
+  sudo_user: "{{ supervisor_service_user }}"
+  with_items: service_variants_enabled
+
+- name: restart edxapp_workers
+  supervisorctl: >
+    name="edxapp_worker:{{ item.service_variant }}_{{ item.queue }}_{{ item.concurrency }}"
+    supervisorctl_path={{ supervisor_ctl }}
+    config={{ supervisor_cfg }}
+    state=restarted
+  sudo_user: "{{ common_web_user }}"
+  with_items: edxapp_workers

@@ -1,0 +1,34 @@
+---
+- name: add PPAs
+  apt_repository:
+    repo="{{ item }}"
+  with_items:
+    - "ppa:hastexo/python"
+
+- name: upgrade and install packages
+  apt: >-
+    name="{{ item }}"
+    state=latest
+    update_cache=yes
+  with_items:
+    - gateone
+
+- name: gateone configuration directory
+  file: >
+    path=/etc/gateone/conf.d
+    state=directory
+    owner=root
+    group=root
+
+- name: gateone server configuration
+  template: >
+    src="gateone/conf.d/{{ item }}"
+    dest="/etc/gateone/conf.d/{{ item }}"
+    owner=root
+    group=root
+  with_items:
+    - 10server.conf
+    - 20authentication.conf
+    - 50terminal.conf
+  notify:
+    - restart gateone

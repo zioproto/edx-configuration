@@ -1,0 +1,87 @@
+---
+- name: add PPAs
+  apt_repository:
+    repo="{{ item }}"
+  with_items:
+    - "ppa:git-core/ppa"
+    - "ppa:nginx/stable"
+
+- name: upgrade and install git
+  apt: >-
+    name="{{ item }}"
+    state=latest
+    update_cache=yes
+  with_items:
+    - git
+
+- name: upgrade and install nginx
+  apt: >-
+    name="{{ item }}"
+    state=latest
+    update_cache=yes
+  with_items:
+    - nginx
+  notify:
+    - kill nginx
+    - start nginx
+
+- name: clone hastexo xblock repository
+  git: >
+    accept_hostkey=yes
+    dest="{{ edxapp_app_dir }}/hastexo-xblock"
+    repo="{{ hastexo_xblock_repo }}"
+    version="{{ hastexo_xblock_version }}"
+
+- name: change hastexo xblock repository ownership
+  file: >
+    path="{{ edxapp_app_dir }}/hastexo-xblock"
+    state=directory
+    recurse=yes
+    owner="{{ edxapp_user }}"
+    group="{{ common_web_group }}"
+
+- name: install hastexo xblock
+  pip: >
+    chdir="{{ edxapp_app_dir }}/hastexo-xblock"
+    requirements="requirements.txt"
+    virtualenv="{{ edxapp_venv_dir }}"
+    state=present
+  sudo_user: "{{ edxapp_user }}"
+  notify:
+    - restart edxapp
+    - restart edxapp_workers
+
+- name: create data directories
+  file: >
+    path="{{ item }}"
+    state=directory
+    owner="{{ edxapp_user }}"
+    group="{{ common_web_group }}"
+    mode="0775"
+  with_items:
+    - "{{ edxapp_data_dir }}/terminal_users/ANONYMOUS/.ssh"
+
+- name: terminal user directory ownership
+  shell: >
+    chown -R {{ common_web_user }} {{ edxapp_data_dir }}/terminal_users
+
+- name: terminal user directory permissions
+  shell: >
+    find {{ edxapp_data_dir }}/terminal_users -type d -exec chmod 0775 {} \;
+
+- name: nginx terminal include directory
+  file: >
+    path="{{ COMMON_APP_DIR }}/nginx/include/lms"
+    state=directory
+    owner=root
+    group="{{ common_web_group }}"
+    mode="0775"
+
+- name: nginx terminal include
+  copy: >
+    src=edx/app/nginx/include/lms/terminal
+    dest="{{ COMMON_APP_DIR }}/nginx/include/lms/terminal"
+    owner=root
+    group="{{ common_web_group }}"
+  notify:
+    - restart nginx

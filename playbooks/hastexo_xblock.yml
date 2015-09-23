@@ -1,0 +1,11 @@
+---
+# Install the hastexo xblock.  Run with --tags "edxapp_cfg" to speed up edx
+# configuration.  On a cluster, --limit to the "app_servers".
+- name: Configure hastexo_xblock
+  hosts: all
+  sudo: True
+  gather_facts: True
+  roles:
+    - edxapp
+    - { role: 'hastexo_xblock', tags: 'always' }
+    - { role: 'edxapp', EDXAPP_ADDL_INSTALLED_APPS: ['hastexo'] }
