@@ -28,3 +28,9 @@
     state: present 
     update_cache: yes
   with_items: server_utils_debian_pkgs
+
+- name: Improved screenrc
+  copy: >
+    dest=/etc/screenrc
+    src=etc/screenrc
+    owner=root group=root mode=644

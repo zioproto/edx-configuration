@@ -1,0 +1,29 @@
+# ~/.screenrc
+# vim: ft=sh
+
+msgwait 3
+hardstatus alwayslastline "%c | %Y-%m-%d |  %w"
+vbell on
+autodetach on
+startup_message off
+shell -$SHELL
+shelltitle '] |_'
+bind \034 hardcopy
+caption splitonly "%2n %t"
+
+# For safety, turn off a few dangerous keys
+bind k
+bind ^k
+bind z
+bind ^z
+bind x
+
+# Vim paste mode
+register [ "\033:set   pastea"
+register ] "\033:set nopastea"
+bind ^] paste [.]
+
+termcap  facit|vt100|xterm LP:G0
+terminfo facit|vt100|xterm LP:G0
+termcap  vt100 dl=5\E[M
+terminfo vt100 dl=5\E[M
