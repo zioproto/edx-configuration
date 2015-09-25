@@ -41,7 +41,7 @@
   git: >
     repo=https://github.com/jzoldak/sitespeed.io.git
     dest=/tmp/sitespeedio
-    version=screenshot-waitscript
+    version=edx-jenkins
     depth=1
 
 - name: Install sitespeed.io from screenshot-waitscript
