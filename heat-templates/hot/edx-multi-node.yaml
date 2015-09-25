@@ -1,0 +1,284 @@
+heat_template_version: 2013-05-23
+
+description: >
+  HOT template for an edX orchestrated deployment.
+
+parameters:
+  image:
+    type: string
+    description: Image ID or name
+    default: ubuntu-12.04-server-cloudimg
+  deploy_flavor:
+    type: string
+    description: Flavor to use for deploy node
+    default: m1.small
+  backend_flavor:
+    type: string
+    description: Flavor to use for backend servers
+    default: m1.medium
+  app_flavor:
+    type: string
+    description: Flavor to use for app servers
+    default: m1.large
+  app_count:
+    type: number
+    description: Number of app servers
+    default: 1
+  app_port:
+    type: number
+    description: Load balancer port for app servers
+    default: 443
+  public_net_id:
+    type: string
+    description: Public network ID
+  key_name:
+    type: string
+    description: keypair for authentication
+
+resources:
+  server_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      description: Neutron security group rules
+      name: server_security_group
+      rules:
+      - remote_mode: 'remote_group_id'
+        remote_group_id:
+        direction: ingress
+      - remote_ip_prefix: 0.0.0.0/0
+        protocol: tcp
+        direction: ingress
+        port_range_min: 22
+        port_range_max: 22
+      - remote_ip_prefix: 0.0.0.0/0
+        protocol: icmp
+      - remote_ip_prefix: 0.0.0.0/0
+        protocol: tcp
+        direction: ingress
+        port_range_min: { get_param: app_port }
+        port_range_max: { get_param: app_port }
+
+  management_net:
+    type: OS::Neutron::Net
+    properties:
+      name: management-net
+
+  management_sub_net:
+    type: OS::Neutron::Subnet
+    properties:
+      name: management-sub-net
+      network_id: { get_resource: management_net }
+      cidr: 192.168.122.0/24
+      gateway_ip: 192.168.122.1
+      enable_dhcp: true
+      allocation_pools: [ { "start": "192.168.122.200", "end": "192.168.122.254" } ]
+
+  router:
+    type: OS::Neutron::Router
+
+  router_gateway:
+    type: OS::Neutron::RouterGateway
+    properties:
+      router_id: { get_resource: router }
+      network_id: { get_param: public_net_id }
+
+  router_interface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id: { get_resource: router }
+      subnet_id: { get_resource: management_sub_net }
+
+  default_cloud_config:
+    type: OS::Heat::CloudConfig
+    properties:
+      cloud_config:
+        package_update: true
+        package_upgrade: true
+        packages:
+          - build-essential
+          - software-properties-common
+          - python-software-properties
+          - curl
+          - git-core
+          - libxml2-dev
+          - libxslt1-dev
+          - python-pip
+          - python-apt
+          - python-dev
+        runcmd:
+          - /usr/bin/pip install --upgrade pip && /usr/local/bin/pip install --upgrade virtualenv
+
+  deploy_cloud_config:
+    type: OS::Heat::CloudConfig
+    properties:
+      cloud_config:
+        package_update: true
+        package_upgrade: true
+        packages:
+          - build-essential
+          - software-properties-common
+          - python-software-properties
+          - curl
+          - git-core
+          - libxml2-dev
+          - libxslt1-dev
+          - python-pip
+          - python-apt
+          - python-dev
+        runcmd:
+          - /usr/bin/pip install --upgrade pip && /usr/local/bin/pip install --upgrade virtualenv && git clone -b "named-release/cypress" https://github.com/edx/configuration /var/tmp/edx-configuration && /usr/local/bin/pip install -r /var/tmp/edx-configuration/requirements.txt
+
+  deploy:
+    type: OS::Nova::Server
+    properties:
+      name: deploy
+      image: { get_param: image }
+      flavor: { get_param: deploy_flavor }
+      key_name: { get_param: key_name }
+      user_data: { get_resource: deploy_cloud_config }
+      user_data_format: RAW
+      networks:
+        - port: { get_resource: deploy_management_port }
+      metadata:
+        backend_servers:
+          - { get_attr: [ backend_a, first_address ] }
+          - { get_attr: [ backend_b, first_address ] }
+          - { get_attr: [ backend_c, first_address ] }
+        app_servers: { get_attr: [ app_servers, server_ip ] }
+
+  deploy_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      security_groups:
+        - { get_resource: server_security_group }
+      fixed_ips:
+        - ip_address: 192.168.122.100
+
+  deploy_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_resource: deploy_management_port }
+      fixed_ip_address: 192.168.122.100
+
+  backend_a:
+    type: OS::Nova::Server
+    properties:
+      name: backend_a
+      image: { get_param: image }
+      flavor: { get_param: backend_flavor }
+      key_name: { get_param: key_name }
+      user_data: { get_resource: default_cloud_config }
+      user_data_format: RAW
+      networks:
+        - port: { get_resource: backend_a_management_port }
+
+  backend_a_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      security_groups:
+        - { get_resource: server_security_group }
+      fixed_ips:
+        - ip_address: 192.168.122.111
+
+  backend_b:
+    type: OS::Nova::Server
+    properties:
+      name: backend_b
+      image: { get_param: image }
+      flavor: { get_param: backend_flavor }
+      key_name: { get_param: key_name }
+      user_data: { get_resource: default_cloud_config }
+      user_data_format: RAW
+      networks:
+        - port: { get_resource: backend_b_management_port }
+
+  backend_b_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      security_groups:
+        - { get_resource: server_security_group }
+      fixed_ips:
+        - ip_address: 192.168.122.112
+
+  backend_c:
+    type: OS::Nova::Server
+    properties:
+      name: backend_c
+      image: { get_param: image }
+      flavor: { get_param: backend_flavor }
+      key_name: { get_param: key_name }
+      user_data: { get_resource: default_cloud_config }
+      user_data_format: RAW
+      networks:
+        - port: { get_resource: backend_c_management_port }
+
+  backend_c_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_resource: management_net }
+      security_groups:
+        - { get_resource: server_security_group }
+      fixed_ips:
+        - ip_address: 192.168.122.113
+
+  app_servers:
+    type: OS::Heat::ResourceGroup
+    depends_on: management_sub_net
+    properties:
+      count: { get_param: app_count }
+      resource_def:
+        type: edx-app-server.yaml
+        properties:
+          flavor: { get_param: app_flavor }
+          image: { get_param: image }
+          key_name: { get_param: key_name }
+          pool_id: { get_resource: app_server_pool }
+          protocol_port: { get_param: app_port }
+          metadata: { "metering.stack": { get_param: "OS::stack_id" } }
+          network: { get_resource: management_net }
+          security_group: { get_resource: server_security_group }
+          user_data: { get_resource: default_cloud_config }
+
+  app_server_monitor:
+    type: OS::Neutron::HealthMonitor
+    properties:
+      type: TCP
+      delay: 3
+      max_retries: 5
+      timeout: 5
+
+  app_server_pool:
+    type: OS::Neutron::Pool
+    properties:
+      lb_method: SOURCE_IP
+      protocol: TCP
+      vip:
+        protocol_port: { get_param: app_port }
+        session_persistence:
+          type: SOURCE_IP
+      monitors: [ { get_resource: app_server_monitor } ]
+      subnet_id: { get_resource: management_sub_net }
+
+  app_server_floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: { get_param: public_net_id }
+      port_id: { get_attr: [ app_server_pool, vip, port_id ] }
+
+  app_server_lb:
+    type: OS::Neutron::LoadBalancer
+    properties:
+      protocol_port: { get_param: app_port }
+      pool_id: { get_resource: app_server_pool }
+
+outputs:
+  deploy_ip:
+    description: IP address of the deploy node.
+    value: { get_attr: [ deploy_floating_ip, floating_ip_address ] }
+  app_ip:
+    description: IP address of the app_server group.
+    value: { get_attr: [ app_server_floating_ip, floating_ip_address ] }
