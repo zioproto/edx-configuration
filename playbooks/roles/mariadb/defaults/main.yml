@@ -34,8 +34,11 @@ MARIADB_DATABASES:
   - "{{ ORA_MYSQL_DB_NAME|default('ora') }}"
 
 MARIADB_ANALYTICS_DATABASES:
-  - "{{ ANALYTICS_API_CONFIG['DATABASES']['default']['NAME']|default('analytics-api') }}"
-  - "{{ ANALYTICS_API_CONFIG['DATABASES']['reports']['NAME']|default('reports') }}"
+  - "{{ ANALYTICS_API_SERVICE_CONFIG['DATABASES']['default']['NAME']|default('analytics-api') }}"
+  - "{{ ANALYTICS_API_SERVICE_CONFIG['DATABASES']['reports']['NAME']|default('reports') }}"
+
+MARIADB_NOTES_DATABASES:
+  - "{{ edx_notes_api_service_config['DATABASES']['default']['NAME']|default('edx_notes_api') }}"
 
 MARIADB_USERS:
   - name: "{{ EDXAPP_MYSQL_USER|default('edxapp001') }}"
@@ -84,24 +87,35 @@ MARIADB_USERS:
     host: "{{ MARIADB_HOST_PRIV }}"
 
 MARIADB_ANALYTICS_USERS:
-  - name: "{{ ANALYTICS_API_CONFIG['DATABASES']['default']['USER']|default('api001') }}"
-    pass: "{{ ANALYTICS_API_CONFIG['DATABASES']['default']['PASSWORD']|default('password') }}"
-    priv: "{{ ANALYTICS_API_CONFIG['DATABASES']['default']['NAME'] }}.*:ALL/reports.*:SELECT"
+  - name: "{{ ANALYTICS_API_SERVICE_CONFIG['DATABASES']['default']['USER']|default('api001') }}"
+    pass: "{{ ANALYTICS_API_SERVICE_CONFIG['DATABASES']['default']['PASSWORD']|default('password') }}"
+    priv: "{{ ANALYTICS_API_SERVICE_CONFIG['DATABASES']['default']['NAME'] }}.*:ALL/reports.*:SELECT"
     host: "{{ MARIADB_HOST_PRIV }}"
 
-  - name: "{{ ANALYTICS_API_CONFIG['DATABASES']['reports']['USER']|default('reports001') }}"
-    pass: "{{ ANALYTICS_API_CONFIG['DATABASES']['reports']['PASSWORD']|default('password') }}"
-    priv: "{{ ANALYTICS_API_CONFIG['DATABASES']['reports']['NAME'] }}.*:SELECT"
-    host: "{{ MARIADB_HOST_PRIV }}"
-
-  - name: "{{ COMMON_MYSQL_MIGRATE_USER|default('migrate') }}"
-    pass: "{{ COMMON_MYSQL_MIGRATE_PASSWORD|default('password') }}"
-    priv: "{{ ANALYTICS_API_CONFIG['DATABASES']['default']['NAME']|default('analytics-api') }}.*:ALL"
+  - name: "{{ ANALYTICS_API_SERVICE_CONFIG['DATABASES']['reports']['USER']|default('reports001') }}"
+    pass: "{{ ANALYTICS_API_SERVICE_CONFIG['DATABASES']['reports']['PASSWORD']|default('password') }}"
+    priv: "{{ ANALYTICS_API_SERVICE_CONFIG['DATABASES']['reports']['NAME'] }}.*:SELECT"
     host: "{{ MARIADB_HOST_PRIV }}"
 
   - name: "{{ COMMON_MYSQL_MIGRATE_USER|default('migrate') }}"
     pass: "{{ COMMON_MYSQL_MIGRATE_PASSWORD|default('password') }}"
-    priv: "{{ ANALYTICS_API_CONFIG['DATABASES']['reports']['NAME']|default('reports') }}.*:ALL"
+    priv: "{{ ANALYTICS_API_SERVICE_CONFIG['DATABASES']['default']['NAME']|default('analytics-api') }}.*:ALL"
+    host: "{{ MARIADB_HOST_PRIV }}"
+
+  - name: "{{ COMMON_MYSQL_MIGRATE_USER|default('migrate') }}"
+    pass: "{{ COMMON_MYSQL_MIGRATE_PASSWORD|default('password') }}"
+    priv: "{{ ANALYTICS_API_SERVICE_CONFIG['DATABASES']['reports']['NAME']|default('reports') }}.*:ALL"
+    host: "{{ MARIADB_HOST_PRIV }}"
+
+MARIADB_NOTES_USERS:
+  - name: "{{ edx_notes_api_service_config['DATABASES']['default']['USER']|default('notes001') }}"
+    pass: "{{ edx_notes_api_service_config['DATABASES']['default']['PASSWORD']|default('secret') }}"
+    priv: "{{ edx_notes_api_service_config['DATABASES']['default']['NAME'] }}.*:ALL"
+    host: "{{ MARIADB_HOST_PRIV }}"
+
+  - name: "{{ COMMON_MYSQL_MIGRATE_USER|default('migrate') }}"
+    pass: "{{ COMMON_MYSQL_MIGRATE_PASSWORD|default('password') }}"
+    priv: "{{ edx_notes_api_service_config['DATABASES']['default']['NAME']|default('edx_notes_api') }}.*:ALL"
     host: "{{ MARIADB_HOST_PRIV }}"
 
 #
