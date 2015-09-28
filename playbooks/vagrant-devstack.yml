@@ -24,6 +24,7 @@
     - elasticsearch
     - forum
     - ecommerce
+    - programs
     - role: notifier
       NOTIFIER_DIGEST_TASK_INTERVAL: "5"
     - role: ora
