@@ -60,6 +60,7 @@
   sudo_user: "{{ ecommerce_user }}"
   environment: "{{ ecommerce_environment }}"
   when: migrate_db is defined and migrate_db|lower == "yes"
+  run_once: true
 
 - name: populate countries
   shell: >

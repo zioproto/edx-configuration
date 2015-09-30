@@ -13,6 +13,7 @@
     chdir={{ demo_edxapp_code_dir }}
   sudo_user: "{{ common_web_user }}"
   when: demo_checkout.changed
+  run_once: true
 
 - name: create some test users and enroll them in the course
   shell: >
@@ -21,6 +22,7 @@
   sudo_user: "{{ common_web_user }}"
   with_items: demo_test_users
   when: demo_checkout.changed
+  run_once: true
 
 - name: create staff user
   shell: >
@@ -30,6 +32,7 @@
   when:
     - demo_checkout.changed
     - DEMO_CREATE_STAFF_USER
+  run_once: true
 
 - name: add test users to the certificate whitelist
   shell: >
@@ -37,6 +40,7 @@
     chdir={{ demo_edxapp_code_dir }}
   with_items: demo_test_users
   when: demo_checkout.changed
+  run_once: true
 
 - name: seed the forums for the demo course
   shell: >
@@ -44,3 +48,4 @@
     chdir={{ demo_edxapp_code_dir }}
   with_items: demo_test_users
   when: demo_checkout.changed
+  run_once: true

@@ -148,6 +148,7 @@
   with_items: service_variants_enabled
   tags:
     - migrate
+  run_once: true
 
 # Gather assets using paver if possible
 

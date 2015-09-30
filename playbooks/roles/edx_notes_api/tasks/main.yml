@@ -62,6 +62,7 @@
   environment:
     EDXNOTES_CONFIG_ROOT: "{{ COMMON_CFG_DIR }}"
   when: migrate_db is defined and migrate_db|lower == "yes"
+  run_once: true
 
 - name: write out gunicorn.py
   template: >
