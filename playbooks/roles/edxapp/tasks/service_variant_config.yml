@@ -111,6 +111,7 @@
     DB_MIGRATION_PASS: "{{ COMMON_MYSQL_MIGRATE_PASS }}"
     EDX_PLATFORM_SETTINGS_OVERRIDE: "aws_migrate"
   with_items: service_variants_enabled
+  run_once: true
 
 # Gather assets using paver if possible
 

@@ -93,6 +93,7 @@
   notify:
     - restart ora
     - restart ora_celery
+  run_once: true
 
 - name: create users
   shell: SERVICE_VARIANT=ora {{ ora_venv_dir }}/bin/django-admin.py update_users --settings=edx_ora.aws --pythonpath={{ ora_code_dir }}

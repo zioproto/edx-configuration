@@ -62,6 +62,7 @@
   sudo_user: "{{ insights_user }}"
   environment: "{{ insights_environment }}"
   when: migrate_db is defined and migrate_db|lower == "yes"
+  run_once: true
 
 - name: run r.js optimizer
   shell: >
