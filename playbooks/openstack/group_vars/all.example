@@ -1,0 +1,46 @@
+---
+secure_dir: "openstack"
+local_dir:  '{{ secure_dir }}/local'
+edx_platform_version: "named-release/cypress"
+certs_version: "{{ edx_platform_version }}"
+forum_version: "{{ edx_platform_version }}"
+xqueue_version: "{{ edx_platform_version }}"
+hastexo_xblock_version: "cypress"
+openid_workaround: True
+EDXAPP_LMS_NGINX_PORT: 80
+EDXAPP_LMS_SSL_NGINX_PORT: 443
+EDXAPP_CMS_NGINX_PORT: 80
+EDXAPP_CMS_SSL_NGINX_PORT: 443
+NGINX_SET_X_FORWARDED_HEADERS: True
+COMMON_ENABLE_DATADOG: False
+COMMON_ENABLE_SPLUNKFORWARDER: False
+ENABLE_LEGACY_ORA: !!null
+EDXAPP_SITE_NAME: "lms.example.com"
+EDXAPP_LMS_BASE: "lms.example.com"
+EDXAPP_CMS_BASE: "studio.example.com"
+EDXAPP_PLATFORM_NAME: "Open edX"
+edxapp_use_custom_theme: true
+edxapp_theme_name: default
+edxapp_theme_source_repo: "https://github.com/Stanford-Online/edx-theme.git"
+edxapp_theme_version: master
+EDXAPP_ALLOW_ALL_ADVANCED_COMPONENTS: True
+EDXAPP_ENABLE_SYSADMIN_DASHBOARD: True
+NGINX_ENABLE_SSL: True
+NGINX_SSL_CERTIFICATE: "{{ secure_dir }}/files/wildcard.example.com.pem"
+NGINX_SSL_KEY: "{{ secure_dir }}/files/wildcard.example.com.key"
+MONGO_CLUSTER_KEY: 'password'
+ANALYTICS_API_DATABASES:
+  default:
+    ENGINE: 'django.db.backends.mysql'
+    NAME: '{{ ANALYTICS_API_DEFAULT_DB_NAME }}'
+    USER: 'api001'
+    PASSWORD: 'password'
+    HOST: "{{ groups['backend_servers'][0] }}"
+    PORT: '3306'
+  reports:
+    ENGINE: 'django.db.backends.mysql'
+    NAME: '{{ ANALYTICS_API_REPORTS_DB_NAME }}'
+    USER: 'reports001'
+    PASSWORD: 'password'
+    HOST: "{{ groups['backend_servers'][0] }}"
+    PORT: '3306'

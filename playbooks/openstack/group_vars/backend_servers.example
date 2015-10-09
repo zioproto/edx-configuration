@@ -1,0 +1,6 @@
+---
+MONGO_CLUSTERED: yes
+mongo_cluster_members: "{{ play_hosts }}"
+ELASTICSEARCH_CLUSTERED: yes
+MARIADB_CLUSTERED: yes
+MARIADB_HAPROXY_HOSTS: ""
