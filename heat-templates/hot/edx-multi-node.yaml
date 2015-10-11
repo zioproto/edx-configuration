@@ -126,7 +126,7 @@ resources:
           - python-apt
           - python-dev
         runcmd:
-          - /usr/bin/pip install --upgrade pip && /usr/local/bin/pip install --upgrade virtualenv && git clone -b "named-release/cypress" https://github.com/edx/configuration /var/tmp/edx-configuration && /usr/local/bin/pip install -r /var/tmp/edx-configuration/requirements.txt
+          - /usr/bin/pip install --upgrade pip && /usr/local/bin/pip install --upgrade virtualenv && git clone -b "integration/cypress" https://github.com/hastexo/edx-configuration /var/tmp/edx-configuration && /usr/local/bin/pip install -r /var/tmp/edx-configuration/requirements.txt
 
   deploy:
     type: OS::Nova::Server
