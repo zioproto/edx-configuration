@@ -34,6 +34,15 @@ parameters:
   key_name:
     type: string
     description: keypair for authentication
+  mysql_size:
+    type: string
+    description: Size of MariaDB volumes
+    default: 10
+  mongodb_size:
+    type: string
+    description: Size of MongoDB volumes
+    default: 10
+
 
 resources:
   server_security_group:
@@ -88,7 +97,45 @@ resources:
       router_id: { get_resource: router }
       subnet_id: { get_resource: management_sub_net }
 
-  default_cloud_config:
+  backend_cloud_config:
+    type: OS::Heat::CloudConfig
+    properties:
+      cloud_config:
+        apt_sources:
+          - source: "deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu precise main"
+            keyid: BA9EF27F
+        package_update: true
+        package_upgrade: true
+        packages:
+          - build-essential
+          - software-properties-common
+          - curl
+          - git-core
+          - libxml2-dev
+          - libxslt1-dev
+          - python-pip
+          - python-apt
+          - python-dev
+          - libmysqlclient-dev
+          - libxmlsec1-dev
+          - libfreetype6-dev
+          - swig
+          - gcc-4.8
+          - g++-4.8
+          - xfsprogs
+        runcmd:
+          - mkdir -pv /var/lib/mysql /edx/var/mongo/mongodb
+          - echo "/dev/vdb /var/lib/mysql xfs defaults 1 2" >> /etc/fstab
+          - echo "/dev/vdc /edx/var/mongo/mongodb xfs defaults 1 2" >> /etc/fstab
+          - while [ ! -e /dev/vdb ]; do sleep 5; done
+          - if ! mount /var/lib/mysql; then mkfs.xfs /dev/vdb && mount /var/lib/mysql; fi
+          - while [ ! -e /dev/vdc ]; do sleep 5; done
+          - if ! mount /edx/var/mongo/mongodb; then mkfs.xfs /dev/vdc && mount /edx/var/mongo/mongodb; fi
+          - /usr/bin/pip install --upgrade pip && /usr/local/bin/pip install --upgrade setuptools && /usr/local/bin/pip install --upgrade virtualenv
+          - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
+          - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
+
+  app_cloud_config:
     type: OS::Heat::CloudConfig
     properties:
       cloud_config:
@@ -191,10 +238,11 @@ resources:
       image: { get_param: image }
       flavor: { get_param: backend_flavor }
       key_name: { get_param: key_name }
-      user_data: { get_resource: default_cloud_config }
+      user_data: { get_resource: backend_cloud_config }
       user_data_format: RAW
       networks:
         - port: { get_resource: backend_a_management_port }
+      block_device_mapping: [{"device_name": "vdb", "volume_id": { get_resource: backend_a_mysql_data }, delete_on_termination: false}, {"device_name": "vdc", "volume_id": { get_resource: backend_a_mongodb_data }, delete_on_termination: false}]
 
   backend_a_management_port:
     type: OS::Neutron::Port
@@ -205,6 +253,16 @@ resources:
       fixed_ips:
         - ip_address: 192.168.122.111
 
+  backend_a_mysql_data:
+    type: OS::Cinder::Volume
+    properties:
+      size: { get_param: mysql_size }
+
+  backend_a_mongodb_data:
+    type: OS::Cinder::Volume
+    properties:
+      size: { get_param: mongodb_size }
+
   backend_b:
     type: OS::Nova::Server
     properties:
@@ -212,10 +270,12 @@ resources:
       image: { get_param: image }
       flavor: { get_param: backend_flavor }
       key_name: { get_param: key_name }
-      user_data: { get_resource: default_cloud_config }
+      user_data: { get_resource: backend_cloud_config }
       user_data_format: RAW
       networks:
         - port: { get_resource: backend_b_management_port }
+      block_device_mapping: [{"device_name": "vdb", "volume_id": { get_resource: backend_b_mysql_data }, delete_on_termination: false}, {"device_name": "vdc", "volume_id": { get_resource: backend_b_mongodb_data }, delete_on_termination: false}]
+
 
   backend_b_management_port:
     type: OS::Neutron::Port
@@ -226,6 +286,16 @@ resources:
       fixed_ips:
         - ip_address: 192.168.122.112
 
+  backend_b_mysql_data:
+    type: OS::Cinder::Volume
+    properties:
+      size: { get_param: mysql_size }
+
+  backend_b_mongodb_data:
+    type: OS::Cinder::Volume
+    properties:
+      size: { get_param: mongodb_size }
+
   backend_c:
     type: OS::Nova::Server
     properties:
@@ -233,10 +303,11 @@ resources:
       image: { get_param: image }
       flavor: { get_param: backend_flavor }
       key_name: { get_param: key_name }
-      user_data: { get_resource: default_cloud_config }
+      user_data: { get_resource: backend_cloud_config }
       user_data_format: RAW
       networks:
         - port: { get_resource: backend_c_management_port }
+      block_device_mapping: [{"device_name": "vdb", "volume_id": { get_resource: backend_c_mysql_data }, delete_on_termination: false}, {"device_name": "vdc", "volume_id": { get_resource: backend_c_mongodb_data }, delete_on_termination: false}]
 
   backend_c_management_port:
     type: OS::Neutron::Port
@@ -246,6 +317,16 @@ resources:
         - { get_resource: server_security_group }
       fixed_ips:
         - ip_address: 192.168.122.113
+
+  backend_c_mysql_data:
+    type: OS::Cinder::Volume
+    properties:
+      size: { get_param: mysql_size }
+
+  backend_c_mongodb_data:
+    type: OS::Cinder::Volume
+    properties:
+      size: { get_param: mongodb_size }
 
   app_servers:
     type: OS::Heat::ResourceGroup
@@ -263,7 +344,7 @@ resources:
           metadata: { "metering.stack": { get_param: "OS::stack_id" } }
           network: { get_resource: management_net }
           security_group: { get_resource: server_security_group }
-          user_data: { get_resource: default_cloud_config }
+          user_data: { get_resource: app_cloud_config }
 
   app_server_monitor:
     type: OS::Neutron::HealthMonitor
