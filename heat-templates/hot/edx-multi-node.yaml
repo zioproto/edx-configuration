@@ -116,13 +116,13 @@ resources:
           - python-dev
           - xfsprogs
         runcmd:
-          - mkdir -pv /var/lib/mysql /var/lib/mongodb
+          - mkdir -pv /var/lib/mysql /edx/var/mongo/mongodb
           - echo "/dev/vdb /var/lib/mysql xfs defaults 1 2" >> /etc/fstab
-          - echo "/dev/vdc /var/lib/mongodb xfs defaults 1 2" >> /etc/fstab
+          - echo "/dev/vdc /edx/var/mongo/mongodb xfs defaults 1 2" >> /etc/fstab
           - while [ ! -e /dev/vdb ]; do sleep 5; done
           - if ! mount /var/lib/mysql; then mkfs.xfs /dev/vdb && mount /var/lib/mysql; fi
           - while [ ! -e /dev/vdc ]; do sleep 5; done
-          - if ! mount /var/lib/mongodb; then mkfs.xfs /dev/vdc && mount /var/lib/mongodb; fi
+          - if ! mount /edx/var/mongo/mongodb; then mkfs.xfs /dev/vdc && mount /edx/var/mongo/mongodb; fi
           - /usr/bin/pip install --upgrade pip && /usr/local/bin/pip install --upgrade virtualenv
 
   app_cloud_config:
