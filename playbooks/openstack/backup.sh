@@ -1,5 +1,5 @@
-#!/bin/sh
-
+#!/bin/bash
+#
 #This script is used for backend server volume's backup. This script will take two 
 # arguments; a UUID of the backup server and the number of old snapshots to keep.
 #Usage:  ./backup.sh <UUID-of-the-backup-server> <number-of-old-snapshots-to-keep>
@@ -13,44 +13,31 @@ if [ $# -ne 2 ]; then
     exit 1
 fi
 
-UUID=$1 #UUID of the backend instance.
-total_snapshots=$2 #Number of old snapshots to keep.
+UUID=$1
+SNAPS=$2
 
-# Define a timestamp variable.
-timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
+# The current date will be appended to the snapshot names
+DATETIME=$(date +"%Y%m%d-%H%M%S")
 
-#Count the total number of snapshots.
-snap_count=$( cinder snapshot-list | grep available | sed 's/\|/ /'|awk '{print $1}' | wc -l)
+# Delete a volume type's old snapshots for this instance
+delete_snapshots () {
+  vtype=$1
+  snaps=$(cinder snapshot-list --status available | awk -F' *\| *' -v i=$vtype-$UUID '$5~i {print $5 " " $2}' | sort | awk '{print $2}')
+  set -- $snaps
+  while [ $# -ge $SNAPS ]; do
+    cinder snapshot-delete $1
+    shift
+  done
+}
 
-#Delete extra snapshots.
-while [ $snap_count -gt $total_snapshots ]
-do
-   snap_uuids=$( cinder snapshot-list | grep mysql | sort -r -k1 | sed 's/\|/ /'|awk '{print $1}' )
-   delete_snap=$(echo $snap_uuids | awk '{ print $1 }')
-   cinder snapshot-delete $delete_snap
-   echo "mysql snapshot $delete_snap deleted"
+# Create a snapshot for an instance's volume type
+create_snapshot () {
+  vtype=$1
+  vid=$(cinder list --status in-use | awk -F' *\| *' -v i=$UUID -v j=$vtype '$8==i && $4~j {print $2}')
+  [ -z "$vid"] && return 1
+  cinder snapshot-create --force True --display-name $vtype-$UUID-$DATETIME $vid
+}
 
-   snap_uuids=$( cinder snapshot-list | grep mongo | sort -r -k1 | sed 's/\|/ /'|awk '{print $1}' )
-   delete_snap=$(echo $snap_uuids | awk '{ print $1 }')
-   cinder snapshot-delete $delete_snap
-   echo "mongo snapshot $delete_snap deleted"
-
-   snap_count=`expr $snap_count - 2`
-   if [ $snap_count -eq $total_snapshots ]
-   then
-      break
-   fi
-   sleep 5
+for i in mysql_data mongodb_data; do
+  delete_snapshots $i && create_snapshot $i
 done
-
-#ID of the mongo volume.
-mongo_volume=$(cinder list | grep $UUID | grep mongo | sed 's/\|/ /'|awk '{print $1}')
-
-#ID of the mysql volume.
-mysql_volume=$(cinder list | grep $UUID | grep mysql | sed 's/\|/ /'|awk '{print $1}')
-
-#Creates a snapshot of mongo volume.
-cinder snapshot-create --force True --name mongo-$UUID-$timestamp $mongo_volume
-
-#Creates a snapshot of mysql volume.
-cinder snapshot-create --force True --name mysql-$UUID-$timestamp $mysql_volume
