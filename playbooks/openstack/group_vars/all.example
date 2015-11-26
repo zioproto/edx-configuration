@@ -14,6 +14,7 @@ NGINX_ENABLE_SSL: True
 NGINX_REDIRECT_TO_HTTPS: True
 NGINX_SSL_CERTIFICATE: "{{ secure_dir }}/files/ssl-cert.pem"
 NGINX_SSL_KEY: "{{ secure_dir }}/files/ssl-cert.key"
+keepalived_shared_ip: "192.168.122.110"
 
 openid_workaround: True
 COMMON_ENABLE_DATADOG: False

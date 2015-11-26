@@ -42,7 +42,10 @@ parameters:
     type: string
     description: Size of MongoDB volumes
     default: 10
-
+  galera_vip:
+    type: string
+    description: VIP for galera.
+    default: 192.168.122.110
 
 resources:
   server_security_group:
@@ -250,6 +253,8 @@ resources:
       network_id: { get_resource: management_net }
       security_groups:
         - { get_resource: server_security_group }
+      allowed_address_pairs:
+        - ip_address: { get_param: galera_vip }
       fixed_ips:
         - ip_address: 192.168.122.111
 
@@ -283,6 +288,8 @@ resources:
       network_id: { get_resource: management_net }
       security_groups:
         - { get_resource: server_security_group }
+      allowed_address_pairs:
+        - ip_address: { get_param: galera_vip }
       fixed_ips:
         - ip_address: 192.168.122.112
 
@@ -315,6 +322,8 @@ resources:
       network_id: { get_resource: management_net }
       security_groups:
         - { get_resource: server_security_group }
+      allowed_address_pairs:
+        - ip_address: { get_param: galera_vip }
       fixed_ips:
         - ip_address: 192.168.122.113
 

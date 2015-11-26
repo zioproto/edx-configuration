@@ -201,6 +201,8 @@ edX to the cluster:
 ```
 cd /var/tmp/edx-configuration/playbooks/openstack/group_vars
 for i in all backend_servers app_servers; do cp $i.example $i; done
+cd ../host_vars
+for i in 111 112 113; do cp 192.168.122.$i.example 192.168.122.$i; done
 ```
 
 Be sure to run the `inventory.py` dynamic inventory generator, as opposed to
