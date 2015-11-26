@@ -1,7 +1,7 @@
 ---
-EDXAPP_MYSQL_HOST: "{{ groups['backend_servers'][0] }}"
-XQUEUE_MYSQL_HOST: "{{ groups['backend_servers'][0] }}"
-EDX_NOTES_API_MYSQL_HOST: "{{ groups['backend_servers'][0] }}"
+EDXAPP_MYSQL_HOST: "{{ keepalived_shared_ip }}"
+XQUEUE_MYSQL_HOST: "{{ keepalived_shared_ip }}"
+EDX_NOTES_API_MYSQL_HOST: "{{ keepalived_shared_ip }}"
 
 EDXAPP_MONGO_HOSTS: "{{ groups['backend_servers'] }}"
 FORUM_MONGO_HOSTS: "{{ groups['backend_servers'] }}"

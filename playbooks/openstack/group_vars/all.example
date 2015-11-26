@@ -29,18 +29,19 @@ NGINX_ENABLE_SSL: True
 NGINX_SSL_CERTIFICATE: "{{ secure_dir }}/files/wildcard.example.com.pem"
 NGINX_SSL_KEY: "{{ secure_dir }}/files/wildcard.example.com.key"
 MONGO_CLUSTER_KEY: 'password'
+keepalived_shared_ip: "192.168.122.110"
 ANALYTICS_API_DATABASES:
   default:
     ENGINE: 'django.db.backends.mysql'
     NAME: '{{ ANALYTICS_API_DEFAULT_DB_NAME }}'
     USER: 'api001'
     PASSWORD: 'password'
-    HOST: "{{ groups['backend_servers'][0] }}"
+    HOST: "{{ keepalived_shared_ip }}"
     PORT: '3306'
   reports:
     ENGINE: 'django.db.backends.mysql'
     NAME: '{{ ANALYTICS_API_REPORTS_DB_NAME }}'
     USER: 'reports001'
     PASSWORD: 'password'
-    HOST: "{{ groups['backend_servers'][0] }}"
+    HOST: "{{ keepalived_shared_ip }}"
     PORT: '3306'
