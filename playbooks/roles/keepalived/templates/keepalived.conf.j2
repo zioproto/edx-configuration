@@ -1,3 +1,9 @@
+vrrp_script chk_mysql_port {
+    script "/etc/keepalived/chk_mysql_port.sh"
+    interval 2
+    weight -3
+}
+
 vrrp_instance VI_1 {
     state {{ keepalived_role }}
     interface {{ keepalived_shared_iface }}
@@ -10,5 +16,8 @@ vrrp_instance VI_1 {
     }
     virtual_ipaddress {
         {{ keepalived_shared_ip }} dev {{ keepalived_shared_iface }} label {{ keepalived_shared_iface }}:0
+    }
+    track_script {
+        chk_mysql_port
     }
 }
