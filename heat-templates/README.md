@@ -98,10 +98,10 @@ will install all ansible prerequisites, including the `edx-configuration`
 repository (check the contents of `/var/log/cloud-init.log` for details).  Once
 `cloud-init` is done, you will be able to start the ansible playbook run from
 within `edx-configuration`.  Before you do so, however, you should enable the
-"localhost" group variables, which will configure this deployment of Open edX:
+"localhost" host variables, which will configure this deployment of Open edX:
 
 ```
-cd /var/tmp/edx-configuration/playbooks/openstack/group_vars
+cd /var/tmp/edx-configuration/playbooks/openstack/host_vars
 cp localhost.example localhost
 cd ../../
 ansible-playbook -i openstack/inventory.ini -c local openstack-single-node.yml
@@ -109,8 +109,8 @@ ansible-playbook -i openstack/inventory.ini -c local openstack-single-node.yml
 
 As mentioned above, this playbook run may take one hour or more.  After it's
 done, log out of the edx node and edit your local /etc/hosts.  If you didn't
-change the example `localhost` group_vars, enter the following, substituting
-`public_ip` for the IP address you obtained above:
+change the example `localhost` host variables, enter the following,
+substituting `public_ip` for the IP address you obtained above:
 
 ```
 <public_ip> lms.example.com studio.example.com
@@ -166,21 +166,27 @@ which will install all ansible prerequisites, including the `edx-configuration`
 repository (check the contents of `/var/log/cloud-init.log` for details).  Once
 `cloud-init` is done, you will be able to start the ansible playbook run from
 within `edx-configuration`.  Before you do so, however, you should enable the
-`all`, `backend_servers`, and `app_servers` group variables, which will
-configure this deployment of Open edX to the cluster.  Also, be sure to run the
-`inventory.py` dynamic inventory generator, as opposed to the static
-`intentory.ini`, meant for single node deployments:
+default group and host variables, which will configure this deployment of Open
+edX to the cluster:
 
 ```
 cd /var/tmp/edx-configuration/playbooks/openstack/group_vars
 for i in all backend_servers app_servers; do cp $i.example $i; done
-cd ../../
+cd ../host_vars
+for i in 111 112 113; do cp 192.168.122.$i.example 192.168.122.$i; done
+```
+
+Be sure to run the `inventory.py` dynamic inventory generator, as opposed to
+the static `intentory.ini`, meant for single node deployments:
+
+```
+cd /var/tmp/edx-configuration/playbooks
 ansible-playbook -i openstack/inventory.py openstack-multi-node.yml
 ```
 
 This playbook run may take one hour or more.  After it's done, log out of the
 deploy node and edit your local /etc/hosts.  If you didn't change any of the
-example group_vars, enter the following, substituting `app_ip` for the IP
+example variables, enter the following, substituting `app_ip` for the IP
 address of the app server pool you can obtain with the following Heat command:
 
 ```
