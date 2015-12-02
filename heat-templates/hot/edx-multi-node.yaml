@@ -118,6 +118,7 @@ resources:
           - python-apt
           - python-dev
           - xfsprogs
+          - libmysqlclient-dev
         runcmd:
           - mkdir -pv /var/lib/mysql /edx/var/mongo/mongodb
           - echo "/dev/vdb /var/lib/mysql xfs defaults 1 2" >> /etc/fstab
@@ -145,6 +146,7 @@ resources:
           - python-pip
           - python-apt
           - python-dev
+          - libmysqlclient-dev
         runcmd:
           - /usr/bin/pip install --upgrade pip && /usr/local/bin/pip install --upgrade virtualenv
 
@@ -165,6 +167,7 @@ resources:
           - python-pip
           - python-apt
           - python-dev
+          - libmysqlclient-dev
         runcmd:
           - /usr/bin/pip install --upgrade pip && /usr/local/bin/pip install --upgrade virtualenv && git clone -b "integration/cypress" https://github.com/hastexo/edx-configuration /var/tmp/edx-configuration && /usr/local/bin/pip install -r /var/tmp/edx-configuration/requirements.txt
 
