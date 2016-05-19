@@ -100,36 +100,6 @@ resources:
       router_id: { get_resource: router }
       subnet_id: { get_resource: management_sub_net }
 
-  app_cloud_config:
-    type: OS::Heat::CloudConfig
-    properties:
-      cloud_config:
-        apt_sources:
-          - source: "deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu precise main"
-            keyid: BA9EF27F
-        package_update: true
-        package_upgrade: true
-        packages:
-          - build-essential
-          - software-properties-common
-          - curl
-          - git-core
-          - libxml2-dev
-          - libxslt1-dev
-          - python-pip
-          - python-apt
-          - python-dev
-          - libmysqlclient-dev
-          - libxmlsec1-dev
-          - libfreetype6-dev
-          - swig
-          - gcc-4.8
-          - g++-4.8
-        runcmd:
-          - /usr/bin/pip install --upgrade pip && /usr/local/bin/pip install --upgrade setuptools && /usr/local/bin/pip install --upgrade virtualenv
-          - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
-          - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
-
   deploy_cloud_config:
     type: OS::Heat::CloudConfig
     properties:
