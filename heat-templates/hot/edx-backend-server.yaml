@@ -1,0 +1,122 @@
+heat_template_version: 2013-05-23
+
+description: >
+  HOT template for an edX orchestrated deployment.
+
+parameters:
+  name:
+    type: string
+    description: Name of the VM
+  image:
+    type: string
+    description: Image ID or name
+    default: ubuntu-12.04-server-cloudimg
+  flavor:
+    type: string
+    description: Flavor to use for backend servers
+    default: m1.medium
+  metadata:
+    type: json
+  network:
+    type: string
+    description: Network used by the server
+  security_group:
+    type: string
+    description: Security group used by the server
+  key_name:
+    type: string
+    description: keypair for authentication
+  mysql_size:
+    type: string
+    description: Size of MariaDB volumes
+    default: 10
+  mongodb_size:
+    type: string
+    description: Size of MongoDB volumes
+    default: 10
+  galera_vip:
+    type: string
+    description: VIP for galera.
+    default: 192.168.122.110
+
+resources:
+  backend_cloud_config:
+    type: OS::Heat::CloudConfig
+    properties:
+      cloud_config:
+        apt_sources:
+          - source: "deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu precise main"
+            keyid: BA9EF27F
+        package_update: true
+        package_upgrade: true
+        packages:
+          - build-essential
+          - software-properties-common
+          - curl
+          - git-core
+          - libxml2-dev
+          - libxslt1-dev
+          - python-pip
+          - python-apt
+          - python-dev
+          - libmysqlclient-dev
+          - libxmlsec1-dev
+          - libfreetype6-dev
+          - swig
+          - gcc-4.8
+          - g++-4.8
+          - xfsprogs
+        runcmd:
+          - mkdir -pv /var/lib/mysql /edx/var/mongo/mongodb
+          - echo "/dev/vdb /var/lib/mysql xfs defaults 1 2" >> /etc/fstab
+          - echo "/dev/vdc /edx/var/mongo/mongodb xfs defaults 1 2" >> /etc/fstab
+          - while [ ! -e /dev/vdb ]; do sleep 5; done
+          - if ! mount /var/lib/mysql; then mkfs.xfs /dev/vdb && mount /var/lib/mysql; fi
+          - while [ ! -e /dev/vdc ]; do sleep 5; done
+          - if ! mount /edx/var/mongo/mongodb; then mkfs.xfs /dev/vdc && mount /edx/var/mongo/mongodb; fi
+          - /usr/bin/pip install --upgrade pip && /usr/local/bin/pip install --upgrade setuptools && /usr/local/bin/pip install --upgrade virtualenv
+          - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
+          - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
+
+  backend_server:
+    type: OS::Nova::Server
+    properties:
+      name: { get_param: name }
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      user_data: { get_resource: backend_cloud_config }
+      user_data_format: RAW
+      networks:
+        - port: { get_resource: backend_management_port }
+      block_device_mapping:
+        - "device_name": "vdb"
+          "volume_id": { get_resource: backend_mysql_data }
+          delete_on_termination: false
+        - "device_name": "vdc"
+          "volume_id": { get_resource: backend_mongodb_data }
+          delete_on_termination: false
+
+  backend_management_port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: { get_param: network }
+      security_groups:
+        - { get_param: security_group }
+      allowed_address_pairs:
+        - ip_address: { get_param: galera_vip }
+
+  backend_mysql_data:
+    type: OS::Cinder::Volume
+    properties:
+      size: { get_param: mysql_size }
+
+  backend_mongodb_data:
+    type: OS::Cinder::Volume
+    properties:
+      size: { get_param: mongodb_size }
+
+outputs:
+  server_ip:
+    description: IP Address of the backend server
+    value: { get_attr: [ backend_server, first_address ] }

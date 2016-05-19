@@ -100,44 +100,6 @@ resources:
       router_id: { get_resource: router }
       subnet_id: { get_resource: management_sub_net }
 
-  backend_cloud_config:
-    type: OS::Heat::CloudConfig
-    properties:
-      cloud_config:
-        apt_sources:
-          - source: "deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu precise main"
-            keyid: BA9EF27F
-        package_update: true
-        package_upgrade: true
-        packages:
-          - build-essential
-          - software-properties-common
-          - curl
-          - git-core
-          - libxml2-dev
-          - libxslt1-dev
-          - python-pip
-          - python-apt
-          - python-dev
-          - libmysqlclient-dev
-          - libxmlsec1-dev
-          - libfreetype6-dev
-          - swig
-          - gcc-4.8
-          - g++-4.8
-          - xfsprogs
-        runcmd:
-          - mkdir -pv /var/lib/mysql /edx/var/mongo/mongodb
-          - echo "/dev/vdb /var/lib/mysql xfs defaults 1 2" >> /etc/fstab
-          - echo "/dev/vdc /edx/var/mongo/mongodb xfs defaults 1 2" >> /etc/fstab
-          - while [ ! -e /dev/vdb ]; do sleep 5; done
-          - if ! mount /var/lib/mysql; then mkfs.xfs /dev/vdb && mount /var/lib/mysql; fi
-          - while [ ! -e /dev/vdc ]; do sleep 5; done
-          - if ! mount /edx/var/mongo/mongodb; then mkfs.xfs /dev/vdc && mount /edx/var/mongo/mongodb; fi
-          - /usr/bin/pip install --upgrade pip && /usr/local/bin/pip install --upgrade setuptools && /usr/local/bin/pip install --upgrade virtualenv
-          - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
-          - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
-
   app_cloud_config:
     type: OS::Heat::CloudConfig
     properties:
@@ -212,10 +174,7 @@ resources:
       networks:
         - port: { get_resource: deploy_management_port }
       metadata:
-        backend_servers:
-          - { get_attr: [ backend_a, first_address ] }
-          - { get_attr: [ backend_b, first_address ] }
-          - { get_attr: [ backend_c, first_address ] }
+        backend_servers: { get_attr: [ backend_servers, server_ip ] }
         app_servers: { get_attr: [ app_servers, server_ip ] }
 
   deploy_management_port:
@@ -234,109 +193,25 @@ resources:
       port_id: { get_resource: deploy_management_port }
       fixed_ip_address: 192.168.122.100
 
-  backend_a:
-    type: OS::Nova::Server
+  backend_servers:
+    type: OS::Heat::ResourceGroup
+    depends_on: management_sub_net
     properties:
-      name: backend_a
-      image: { get_param: image }
-      flavor: { get_param: backend_flavor }
-      key_name: { get_param: key_name }
-      user_data: { get_resource: backend_cloud_config }
-      user_data_format: RAW
-      networks:
-        - port: { get_resource: backend_a_management_port }
-      block_device_mapping: [{"device_name": "vdb", "volume_id": { get_resource: backend_a_mysql_data }, delete_on_termination: false}, {"device_name": "vdc", "volume_id": { get_resource: backend_a_mongodb_data }, delete_on_termination: false}]
-
-  backend_a_management_port:
-    type: OS::Neutron::Port
-    properties:
-      network_id: { get_resource: management_net }
-      security_groups:
-        - { get_resource: server_security_group }
-      allowed_address_pairs:
-        - ip_address: { get_param: galera_vip }
-      fixed_ips:
-        - ip_address: 192.168.122.111
-
-  backend_a_mysql_data:
-    type: OS::Cinder::Volume
-    properties:
-      size: { get_param: mysql_size }
-
-  backend_a_mongodb_data:
-    type: OS::Cinder::Volume
-    properties:
-      size: { get_param: mongodb_size }
-
-  backend_b:
-    type: OS::Nova::Server
-    properties:
-      name: backend_b
-      image: { get_param: image }
-      flavor: { get_param: backend_flavor }
-      key_name: { get_param: key_name }
-      user_data: { get_resource: backend_cloud_config }
-      user_data_format: RAW
-      networks:
-        - port: { get_resource: backend_b_management_port }
-      block_device_mapping: [{"device_name": "vdb", "volume_id": { get_resource: backend_b_mysql_data }, delete_on_termination: false}, {"device_name": "vdc", "volume_id": { get_resource: backend_b_mongodb_data }, delete_on_termination: false}]
-
-
-  backend_b_management_port:
-    type: OS::Neutron::Port
-    properties:
-      network_id: { get_resource: management_net }
-      security_groups:
-        - { get_resource: server_security_group }
-      allowed_address_pairs:
-        - ip_address: { get_param: galera_vip }
-      fixed_ips:
-        - ip_address: 192.168.122.112
-
-  backend_b_mysql_data:
-    type: OS::Cinder::Volume
-    properties:
-      size: { get_param: mysql_size }
-
-  backend_b_mongodb_data:
-    type: OS::Cinder::Volume
-    properties:
-      size: { get_param: mongodb_size }
-
-  backend_c:
-    type: OS::Nova::Server
-    properties:
-      name: backend_c
-      image: { get_param: image }
-      flavor: { get_param: backend_flavor }
-      key_name: { get_param: key_name }
-      user_data: { get_resource: backend_cloud_config }
-      user_data_format: RAW
-      networks:
-        - port: { get_resource: backend_c_management_port }
-      block_device_mapping: [{"device_name": "vdb", "volume_id": { get_resource: backend_c_mysql_data }, delete_on_termination: false}, {"device_name": "vdc", "volume_id": { get_resource: backend_c_mongodb_data }, delete_on_termination: false}]
-
-  backend_c_management_port:
-    type: OS::Neutron::Port
-    properties:
-      network_id: { get_resource: management_net }
-      security_groups:
-        - { get_resource: server_security_group }
-      allowed_address_pairs:
-        - ip_address: { get_param: galera_vip }
-      fixed_ips:
-        - ip_address: 192.168.122.113
-
-  backend_c_mysql_data:
-    type: OS::Cinder::Volume
-    properties:
-      size: { get_param: mysql_size }
-
-  backend_c_mongodb_data:
-    type: OS::Cinder::Volume
-    properties:
-      size: { get_param: mongodb_size }
-
+      count: 3
+      resource_def:
+        type: edx-backend-server.yaml
+        properties:
+          name: backend%index%
+          flavor: { get_param: backend_flavor }
+          image: { get_param: image }
+          key_name: { get_param: key_name }
+          metadata: { "metering.stack": { get_param: "OS::stack_id" } }
+          network: { get_resource: management_net }
+          security_group: { get_resource: server_security_group }
+          mysql_size: { get_param: mysql_size }
+          mongodb_size: { get_param: mongodb_size }
+          galera_vip: { get_param: galera_vip }
+      
   app_servers:
     type: OS::Heat::ResourceGroup
     depends_on: management_sub_net
