@@ -38,6 +38,9 @@ parameters:
     type: string
     description: VIP for galera.
     default: 192.168.122.110
+  wait_condition_callback:
+    type: string
+    description: Command to execute at end of initialization
 
 resources:
   backend_cloud_config:
@@ -77,6 +80,7 @@ resources:
           - /usr/bin/pip install --upgrade pip && /usr/local/bin/pip install --upgrade setuptools && /usr/local/bin/pip install --upgrade virtualenv
           - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
           - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
+          - { get_param: wait_condition_callback }
 
   backend_server:
     type: OS::Nova::Server

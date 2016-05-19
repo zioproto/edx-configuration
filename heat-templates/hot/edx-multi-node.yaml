@@ -46,8 +46,42 @@ parameters:
     type: string
     description: VIP for galera.
     default: 192.168.122.110
+  timeout:
+    type: number
+    description: Stack creation timeout (seconds)
+    default: 900
 
 resources:
+  deploy_done:
+    type: OS::Heat::WaitCondition
+    properties:
+      handle: {get_resource: deploy_done_handle}
+      count: 1
+      timeout: {get_param: timeout}
+
+  deploy_done_handle:
+    type: OS::Heat::WaitConditionHandle
+
+  backend_done:
+    type: OS::Heat::WaitCondition
+    properties:
+      handle: {get_resource: backend_done_handle}
+      count: 3
+      timeout: {get_param: timeout}
+
+  app_done_handle:
+    type: OS::Heat::WaitConditionHandle
+
+  app_done:
+    type: OS::Heat::WaitCondition
+    properties:
+      handle: {get_resource: app_done_handle}
+      count: { get_param: app_count }
+      timeout: {get_param: timeout}
+
+  backend_done_handle:
+    type: OS::Heat::WaitConditionHandle
+
   server_security_group:
     type: OS::Neutron::SecurityGroup
     properties:
@@ -131,6 +165,7 @@ resources:
           - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
           - git clone -b "hastexo/master/base" https://github.com/hastexo/edx-configuration /var/tmp/edx-configuration
           - /usr/local/bin/pip install -r /var/tmp/edx-configuration/requirements.txt
+          - { get_attr: ['deploy_done_handle', 'curl_cli'] }
 
   deploy:
     type: OS::Nova::Server
@@ -181,6 +216,7 @@ resources:
           mysql_size: { get_param: mysql_size }
           mongodb_size: { get_param: mongodb_size }
           galera_vip: { get_param: galera_vip }
+          wait_condition_callback: { get_attr: ['backend_done_handle', 'curl_cli'] }
       
   app_servers:
     type: OS::Heat::ResourceGroup
@@ -199,6 +235,7 @@ resources:
           metadata: { "metering.stack": { get_param: "OS::stack_id" } }
           network: { get_resource: management_net }
           security_group: { get_resource: server_security_group }
+          wait_condition_callback: { get_attr: ['app_done_handle', 'curl_cli'] }
 
   app_server_monitor:
     type: OS::Neutron::HealthMonitor
