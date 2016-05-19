@@ -198,7 +198,6 @@ resources:
           metadata: { "metering.stack": { get_param: "OS::stack_id" } }
           network: { get_resource: management_net }
           security_group: { get_resource: server_security_group }
-          user_data: { get_resource: app_cloud_config }
 
   app_server_monitor:
     type: OS::Neutron::HealthMonitor
