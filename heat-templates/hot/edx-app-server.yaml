@@ -59,6 +59,8 @@ resources:
         package_update: true
         package_upgrade: true
         packages:
+          # Open edX requires these for installing and combining
+          # Python packages with pip
           - build-essential
           - curl
           - g++-4.8
@@ -75,7 +77,10 @@ resources:
           - software-properties-common
           - swig
         runcmd:
-          - /usr/bin/pip install --upgrade pip && /usr/local/bin/pip install --upgrade setuptools && /usr/local/bin/pip install --upgrade virtualenv
+          - >
+            /usr/bin/pip install --upgrade pip
+            && /usr/local/bin/pip install --upgrade setuptools
+            && /usr/local/bin/pip install --upgrade virtualenv
           - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
           - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
           - { get_param: wait_condition_callback }
