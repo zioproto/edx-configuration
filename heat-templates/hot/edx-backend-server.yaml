@@ -53,6 +53,8 @@ resources:
         package_update: true
         package_upgrade: true
         packages:
+          # Open edX requires these for installing and combining
+          # Python packages with pip
           - build-essential
           - curl
           - g++-4.8
@@ -70,6 +72,9 @@ resources:
           - swig
           - xfsprogs
         runcmd:
+          # Create volume filesystems and fstab entries
+          # (waiting for volume attachments to be hot-plugged into the
+          # VM)
           - mkdir -pv /var/lib/mysql /edx/var/mongo/mongodb
           - echo "/dev/vdb /var/lib/mysql xfs defaults 1 2" >> /etc/fstab
           - echo "/dev/vdc /edx/var/mongo/mongodb xfs defaults 1 2" >> /etc/fstab

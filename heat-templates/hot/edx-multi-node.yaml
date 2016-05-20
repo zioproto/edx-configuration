@@ -1,7 +1,12 @@
+# This template defines a full Open edX environment. It creates a
+# single deployment node, 3 backend servers backed by persistent
+# volumes, a configurable number of ephemeral application servers, and
+# a load balancing pool behind a floating IP.
 heat_template_version: 2013-05-23
 
 description: >
-  HOT template for an edX orchestrated deployment.
+  Full Open edX deployment: 3 backend nodes, configurable
+  number of application servers behind a load balancer.
 
 parameters:
   image:
@@ -44,7 +49,7 @@ parameters:
     default: 10
   galera_vip:
     type: string
-    description: VIP for galera.
+    description: Load-balanced virtual IP for MySQL/Galera
     default: 192.168.122.110
   timeout:
     type: number
@@ -52,6 +57,8 @@ parameters:
     default: 900
 
 resources:
+  # deploy_done: Wait condition to signal that the deploy node has
+  # completed its installation.
   deploy_done:
     type: OS::Heat::WaitCondition
     properties:
@@ -62,6 +69,11 @@ resources:
   deploy_done_handle:
     type: OS::Heat::WaitConditionHandle
 
+  # backend_done: Wait condition to signal that a backend node has
+  # completed its installation.
+  #
+  # We always run on 3 backend nodes, hence, we wait for this signal
+  # to be received 3 times.
   backend_done:
     type: OS::Heat::WaitCondition
     properties:
@@ -69,9 +81,14 @@ resources:
       count: 3
       timeout: {get_param: timeout}
 
-  app_done_handle:
+  backend_done_handle:
     type: OS::Heat::WaitConditionHandle
 
+  # app_done: Wait condition to signal that an app server has
+  # completed its installation.
+  #
+  # We run on app_count app server nodes, hence, we wait for this
+  # signal to be received app_count times.
   app_done:
     type: OS::Heat::WaitCondition
     properties:
@@ -79,9 +96,14 @@ resources:
       count: { get_param: app_count }
       timeout: {get_param: timeout}
 
-  backend_done_handle:
+  app_done_handle:
     type: OS::Heat::WaitConditionHandle
 
+  # server_security_group: Neutron security group allowing inbound
+  # access on selected ports
+  #
+  # We allow inbound ICMP, SSH, and TCP on whatever was set as the
+  # app_port.
   server_security_group:
     type: OS::Neutron::SecurityGroup
     properties:
@@ -104,11 +126,17 @@ resources:
         port_range_min: { get_param: app_port }
         port_range_max: { get_param: app_port }
 
+  # management_net: private Neutron network
   management_net:
     type: OS::Neutron::Net
     properties:
       name: management-net
 
+  # management_sub_net: private Neutron subnet
+  #
+  # We assign dynamic private (fixed) IPv4 addresses upward of
+  # 192.168.122.200. Any statically configured addresses in this
+  # subnet must use IP addresses below .200.
   management_sub_net:
     type: OS::Neutron::Subnet
     properties:
@@ -119,21 +147,36 @@ resources:
       enable_dhcp: true
       allocation_pools: [ { "start": "192.168.122.200", "end": "192.168.122.254" } ]
 
+  # router: private router
+  #
+  # Connects our private subnet to the floating IP network.
   router:
     type: OS::Neutron::Router
 
+  # router_gateway
+  #
+  # Sets the public network as the router's gateway.
   router_gateway:
     type: OS::Neutron::RouterGateway
     properties:
       router_id: { get_resource: router }
       network_id: { get_param: public_net_id }
 
+  # router_interface
+  #
+  # Plugs the management subnet into the router.
   router_interface:
     type: OS::Neutron::RouterInterface
     properties:
       router_id: { get_resource: router }
       subnet_id: { get_resource: management_sub_net }
 
+  # deploy_cloud_config: cloud-init configuration for deploy node
+  #
+  # Installs several packages needed for bootstrapping Open edX.
+  # At the end of the cloud-init sequence, invokes the wait condition
+  # callback to signal to the calling stack that server creation is
+  # complete.
   deploy_cloud_config:
     type: OS::Heat::CloudConfig
     properties:
@@ -167,6 +210,14 @@ resources:
           - /usr/local/bin/pip install -r /var/tmp/edx-configuration/requirements.txt
           - { get_attr: ['deploy_done_handle', 'curl_cli'] }
 
+  # deploy: the deploy node instance
+  #
+  # Creates a new Nova VM with the appropriate flavor and
+  # image. Injects the configured SSH key for the default user,
+  # applies the cloud-init configuration, and plugs the VM into the
+  # correct network using the correct security group. Also, provides
+  # metadata about backend and app servers to be parsed by the Ansible
+  # dynamic inventory script (inventory.py).
   deploy:
     type: OS::Nova::Server
     properties:
@@ -182,6 +233,11 @@ resources:
         backend_servers: { get_attr: [ backend_servers, server_ip ] }
         app_servers: { get_attr: [ app_servers, server_ip ] }
 
+  # deploy_management_port: the deploy node's network port in the
+  # management network
+  #
+  # Applies the correct security group, and sets a hard-coded fixed
+  # IP address.
   deploy_management_port:
     type: OS::Neutron::Port
     properties:
@@ -191,13 +247,18 @@ resources:
       fixed_ips:
         - ip_address: 192.168.122.100
 
+  # deploy_floating_ip: floating IP address for the deploy node
+  #
+  # Makes the deploy node accessible via a floating IP address.
   deploy_floating_ip:
     type: OS::Neutron::FloatingIP
     properties:
       floating_network_id: { get_param: public_net_id }
       port_id: { get_resource: deploy_management_port }
-      fixed_ip_address: 192.168.122.100
 
+  # backend_servers: creates a backend cluster of 3 nodes
+  #
+  # Backend servers are named backend0, backend1, backend2.
   backend_servers:
     type: OS::Heat::ResourceGroup
     depends_on: management_sub_net
@@ -218,6 +279,10 @@ resources:
           galera_vip: { get_param: galera_vip }
           wait_condition_callback: { get_attr: ['backend_done_handle', 'curl_cli'] }
       
+  # app_servers: creates an application server cluster of a
+  # configurable size
+  #
+  # App servers are named app0 ... appN, where N == app_count - 1.
   app_servers:
     type: OS::Heat::ResourceGroup
     depends_on: management_sub_net
@@ -237,6 +302,7 @@ resources:
           security_group: { get_resource: server_security_group }
           wait_condition_callback: { get_attr: ['app_done_handle', 'curl_cli'] }
 
+  # app_server_monitor: Neutron LBaaS monitor
   app_server_monitor:
     type: OS::Neutron::HealthMonitor
     properties:
@@ -245,6 +311,9 @@ resources:
       max_retries: 5
       timeout: 5
 
+  # app_server_pool: Neutron LBaaS pool
+  #
+  # Defines a private virtual IP (VIP) front end on the app port.
   app_server_pool:
     type: OS::Neutron::Pool
     properties:
@@ -257,12 +326,17 @@ resources:
       monitors: [ { get_resource: app_server_monitor } ]
       subnet_id: { get_resource: management_sub_net }
 
+  # app_server_floating_ip: Neutron LBaaS floating IP address
+  #
+  # Defines a floating IP address linked to the load balancer's
+  # private virtual IP (VIP).
   app_server_floating_ip:
     type: OS::Neutron::FloatingIP
     properties:
       floating_network_id: { get_param: public_net_id }
       port_id: { get_attr: [ app_server_pool, vip, port_id ] }
 
+  # app_server_lb: Neutron LBaaS load balancer
   app_server_lb:
     type: OS::Neutron::LoadBalancer
     properties:

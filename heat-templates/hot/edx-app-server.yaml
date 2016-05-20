@@ -77,12 +77,14 @@ resources:
           - software-properties-common
           - swig
         runcmd:
+          # Install Open edX prerequisites
           - >
             /usr/bin/pip install --upgrade pip
             && /usr/local/bin/pip install --upgrade setuptools
             && /usr/local/bin/pip install --upgrade virtualenv
           - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
           - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
+          # Let the calling stack know that we're done
           - { get_param: wait_condition_callback }
 
   # server: an application server instance
