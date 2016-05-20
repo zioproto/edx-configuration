@@ -54,20 +54,20 @@ resources:
         package_upgrade: true
         packages:
           - build-essential
-          - software-properties-common
           - curl
+          - g++-4.8
+          - gcc-4.8
           - git-core
+          - libfreetype6-dev
+          - libmysqlclient-dev
           - libxml2-dev
+          - libxmlsec1-dev
           - libxslt1-dev
-          - python-pip
           - python-apt
           - python-dev
-          - libmysqlclient-dev
-          - libxmlsec1-dev
-          - libfreetype6-dev
+          - python-pip
+          - software-properties-common
           - swig
-          - gcc-4.8
-          - g++-4.8
           - xfsprogs
         runcmd:
           - mkdir -pv /var/lib/mysql /edx/var/mongo/mongodb
