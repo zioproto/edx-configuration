@@ -78,11 +78,26 @@ resources:
           - mkdir -pv /var/lib/mysql /edx/var/mongo/mongodb
           - echo "/dev/vdb /var/lib/mysql xfs defaults 1 2" >> /etc/fstab
           - echo "/dev/vdc /edx/var/mongo/mongodb xfs defaults 1 2" >> /etc/fstab
-          - while [ ! -e /dev/vdb ]; do sleep 5; done
-          - if ! mount /var/lib/mysql; then mkfs.xfs /dev/vdb && mount /var/lib/mysql; fi
-          - while [ ! -e /dev/vdc ]; do sleep 5; done
-          - if ! mount /edx/var/mongo/mongodb; then mkfs.xfs /dev/vdc && mount /edx/var/mongo/mongodb; fi
-          - /usr/bin/pip install --upgrade pip && /usr/local/bin/pip install --upgrade setuptools && /usr/local/bin/pip install --upgrade virtualenv
+          - >
+            while [ ! -e /dev/vdb ]; do
+              sleep 5;
+            done
+          - >
+            if ! mount /var/lib/mysql; then
+              mkfs.xfs /dev/vdb && mount /var/lib/mysql;
+            fi
+          - >
+            while [ ! -e /dev/vdc ]; do
+              sleep 5;
+            done
+          - >
+            if ! mount /edx/var/mongo/mongodb; then
+              mkfs.xfs /dev/vdc && mount /edx/var/mongo/mongodb;
+            fi
+          - >
+            /usr/bin/pip install --upgrade pip
+            && /usr/local/bin/pip install --upgrade setuptools
+            && /usr/local/bin/pip install --upgrade virtualenv
           - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
           - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
           - { get_param: wait_condition_callback }

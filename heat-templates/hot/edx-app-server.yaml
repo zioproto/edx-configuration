@@ -1,7 +1,8 @@
 # This template defines an Open edX application server. It is meant to
 # be invoked from an OS::Heat::ResourceGroup. It creates a Nova
 # instance of the defined flavor, and plugs that instance into an
-# LBaaS pool.
+# LBaaS pool. The Nova instance is ephemeral and uses no persistent
+# storage.
 heat_template_version: 2013-05-23
 
 description: >
@@ -13,7 +14,9 @@ parameters:
     description: Name of the server
   image:
     type: string
-    description: Image ID or name. Should be a distribution platform supported for Open edX.
+    description: >
+      Image ID or name.
+      Should be a distribution platform supported for Open edX.
     default: ubuntu-12.04-server-cloudimg
   flavor:
     type: string
@@ -36,7 +39,9 @@ parameters:
     description: Security group used by the server
   key_name:
     type: string
-    description: SSH key name for authentication, to be injected into the server for the default user
+    description: >
+      SSH key name for authentication, to be injected into the server
+      for the default user
   wait_condition_callback:
     type: string
     description: Command to execute at end of initialization

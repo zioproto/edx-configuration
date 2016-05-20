@@ -11,7 +11,9 @@ description: >
 parameters:
   image:
     type: string
-    description: Image ID or name
+    description: >
+      Image ID or name.
+      Should be a distribution platform supported for Open edX.
     default: ubuntu-12.04-server-cloudimg
   deploy_flavor:
     type: string
@@ -38,7 +40,9 @@ parameters:
     description: Public network ID
   key_name:
     type: string
-    description: keypair for authentication
+    description: >
+      SSH key name for authentication, to be injected into the servers
+      for the default user
   mysql_size:
     type: string
     description: Size of MariaDB volumes
@@ -203,10 +207,16 @@ resources:
           - software-properties-common
           - swig
         runcmd:
-          - /usr/bin/pip install --upgrade pip && /usr/local/bin/pip install --upgrade setuptools && /usr/local/bin/pip install --upgrade virtualenv
+          - >
+            /usr/bin/pip install --upgrade pip
+            && /usr/local/bin/pip install --upgrade setuptools
+            && /usr/local/bin/pip install --upgrade virtualenv
           - update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
           - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
-          - git clone -b "hastexo/master/base" https://github.com/hastexo/edx-configuration /var/tmp/edx-configuration
+          - >
+            git clone -b "hastexo/master/base"
+            https://github.com/hastexo/edx-configuration
+            /var/tmp/edx-configuration
           - /usr/local/bin/pip install -r /var/tmp/edx-configuration/requirements.txt
           - { get_attr: ['deploy_done_handle', 'curl_cli'] }
 
