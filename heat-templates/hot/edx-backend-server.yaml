@@ -1,15 +1,21 @@
+# This template defines an Open edX backend server. It is meant to be
+# invoked from an OS::Heat::ResourceGroup. It creates a Nova instance
+# of the defined flavor, and adds two volumes (for MongoDB and
+# MySQL/MariaDB storage).
 heat_template_version: 2013-05-23
 
 description: >
-  HOT template for an edX orchestrated deployment.
+  Open edX backend server
 
 parameters:
   name:
     type: string
-    description: Name of the VM
+    description: Name of the server
   image:
     type: string
-    description: Image ID or name
+    description: >
+      Image ID or name.
+      Should be a distribution platform supported for Open edX.
     default: ubuntu-12.04-server-cloudimg
   flavor:
     type: string
@@ -17,6 +23,7 @@ parameters:
     default: m1.medium
   metadata:
     type: json
+    description: Metadata injected into the virtual machine
   network:
     type: string
     description: Network used by the server
@@ -25,24 +32,32 @@ parameters:
     description: Security group used by the server
   key_name:
     type: string
-    description: keypair for authentication
+    description: >
+      SSH key name for authentication, to be injected into the server
+      for the default user
   mysql_size:
     type: string
-    description: Size of MariaDB volumes
+    description: Size of MariaDB volume
     default: 10
   mongodb_size:
     type: string
-    description: Size of MongoDB volumes
+    description: Size of MongoDB volume
     default: 10
   galera_vip:
     type: string
-    description: VIP for galera.
+    description: Load-balanced virtual IP for MySQL/Galera
     default: 192.168.122.110
   wait_condition_callback:
     type: string
     description: Command to execute at end of initialization
 
 resources:
+  # backend_cloud_config: cloud-init configuration for backend servers.
+  #
+  # Installs several packages needed for bootstrapping Open edX.
+  # At the end of the cloud-init sequence, invokes the wait condition
+  # callback to signal to the calling stack that server creation is
+  # complete.
   backend_cloud_config:
     type: OS::Heat::CloudConfig
     properties:
@@ -102,6 +117,13 @@ resources:
           - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
           - { get_param: wait_condition_callback }
 
+  # server: an backend server instance
+  #
+  # Creates a new Nova VM with the appropriate flavor and
+  # image. Injects the configured SSH key for the default user,
+  # applies the cloud-init configuration, and plugs the VM into the
+  # correct network using the correct security group. Also adds block
+  # device mappings for the MySQL and MongoDB volumes.
   server:
     type: OS::Nova::Server
     properties:
