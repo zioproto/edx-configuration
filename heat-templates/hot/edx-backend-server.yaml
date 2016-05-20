@@ -102,7 +102,7 @@ resources:
           - update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
           - { get_param: wait_condition_callback }
 
-  backend_server:
+  server:
     type: OS::Nova::Server
     properties:
       name: { get_param: name }
@@ -112,16 +112,21 @@ resources:
       user_data: { get_resource: backend_cloud_config }
       user_data_format: RAW
       networks:
-        - port: { get_resource: backend_management_port }
+        - port: { get_resource: management_port }
       block_device_mapping:
         - "device_name": "vdb"
-          "volume_id": { get_resource: backend_mysql_data }
+          "volume_id": { get_resource: mysql_data }
           delete_on_termination: false
         - "device_name": "vdc"
-          "volume_id": { get_resource: backend_mongodb_data }
+          "volume_id": { get_resource: mongodb_data }
           delete_on_termination: false
 
-  backend_management_port:
+  # management_port: the server's network port in the management
+  # network
+  #
+  # Applies the correct security group, and allows the Galera virtual
+  # IP to be configured by an application on this port.
+  management_port:
     type: OS::Neutron::Port
     properties:
       network_id: { get_param: network }
@@ -130,12 +135,14 @@ resources:
       allowed_address_pairs:
         - ip_address: { get_param: galera_vip }
 
-  backend_mysql_data:
+  # mysql_data: persistent storage volume for MySQL/MariaDB data
+  mysql_data:
     type: OS::Cinder::Volume
     properties:
       size: { get_param: mysql_size }
 
-  backend_mongodb_data:
+  # mongodb_data: persistent storage volume for MongoDB data
+  mongodb_data:
     type: OS::Cinder::Volume
     properties:
       size: { get_param: mongodb_size }
@@ -143,4 +150,4 @@ resources:
 outputs:
   server_ip:
     description: IP Address of the backend server
-    value: { get_attr: [ backend_server, first_address ] }
+    value: { get_attr: [ server, first_address ] }
